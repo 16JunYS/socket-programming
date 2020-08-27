@@ -41,7 +41,8 @@ int main(int argc, char* argv[])
 	if (connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1)
 		error_handling("connect() error");
 	
-	printf("Type <!quit> to quit\n");
+	printf("Connected.....\n");
+	printf("how to quit : !quit\n");
 	//printf("send file : !filesend");
 
 	printf("Enter username : ");
@@ -52,6 +53,8 @@ int main(int argc, char* argv[])
 	pthread_create(&recv_tid, NULL, recv_msg, (void*)&sock); // 메세지를 받기 위한 쓰레드 생성
 	pthread_join(send_tid, &t_stat);
 	pthread_join(recv_tid, &t_stat);
+	//pthread_detach(send_tid);
+	//pthread_detach(recv_tid);
 
 	close(sock);
 	return 0;
@@ -60,31 +63,20 @@ int main(int argc, char* argv[])
 void* send_msg(void* arg)
 {
 	char message[BUF_SIZE];
-	char file_name[NAME_SIZE];
 	char snd_message[NAME_SIZE+BUF_SIZE];
 	int sock = *((int*)arg);
-	int fd = 0;
 
 	while(1) {
 		memset(message, 0, sizeof(message));
 		memset(snd_message, 0, sizeof(snd_message));
 		
 		fgets(message, BUF_SIZE, stdin); // 메세지 입력
-
-		if(!strncmp(message, "!sendf", 6)) {
-			fgets(file_name, NAME_SIZE, stdin);
-			sprintf(snd_message, "!s[%s] sent you %s", name, file_name);
+		if(!strcmp(message, "!quit\n")) {
+			close(sock);	
+			return NULL;
 		}
-
-		else if (!strcmp(message, "!quit\n")) { // 대화 종료 메세지
-			write(sock, message, strlen(snd_message)); // 대화 종료 메세지 서버로 전달
-			break;	
-		}
-		
-		else {
-			sprintf(snd_message, "[%s] %s", name, message); // 메세지 형식 지정: [유저이름] 메세지
-		}
-
+	
+		sprintf(snd_message, "[%s] %s", name, message); // 메세지 형식 지정: [유저이름] 메세지
 		write(sock, snd_message, strlen(snd_message)); // 메세지 서버로 전달
 	}
 	close(sock);
@@ -94,20 +86,15 @@ void* send_msg(void* arg)
 void* recv_msg(void* arg)
 {
 	char message[BUF_SIZE];
-	char file_name[NAME_SIZE];
-	char file_msg[BUF_SIZE];
 	int sock = *((int*)arg);
-	FILE* fp;	
 	int str_len = 0;
-
+	
 	while(1) {
 		if ((str_len = read(sock, message, NAME_SIZE+BUF_SIZE-1)) == -1) { // 서버로부터 메세지 전달 받음
 			close(sock);
 			error_handling("error receiving message");
 		}
 		message[str_len] = 0;
-		if (!strncmp(message, "!sf", 3)) {
-		}
 		fputs(message, stdout); // 다른 사용자가 보낸 메세지 출력
 	}
 	close(sock);

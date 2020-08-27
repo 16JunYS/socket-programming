@@ -34,7 +34,8 @@ int main(int argc, char* argv[])
 	pthread_mutex_init(&mutex, NULL);
 
 	if ((serv_sock = socket(PF_INET, SOCK_STREAM, 0)) == -1) { 
-		error_handling("socket() error"); }
+		error_handling("socket() error");
+	}
 
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
@@ -50,7 +51,7 @@ int main(int argc, char* argv[])
 	while(1) {
 		clnt_addr_size = sizeof(clnt_addr);
 		clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_addr, &clnt_addr_size);
-		printf("*Client #%d connected..\n", clnt_sock);	
+		
 		pthread_mutex_lock(&mutex);
 		clnt_socks[clnt_cnt++] = clnt_sock; // 새로 연결된 클라이언트 관리
 		pthread_mutex_unlock(&mutex);
@@ -69,11 +70,6 @@ void* handle_clnt(void* arg)
 	char msg[NAME_SIZE+BUF_SIZE];
 
 	while((str_len = read(clnt_sock, msg, NAME_SIZE+BUF_SIZE-1)) != 0) { //클라이언트로부터 메시지 읽음
-			//printf("11111%s", msg);
-		if (!strcmp(msg, "!quit")) {
-			memset(msg, 0, sizeof(msg));
-			sprintf(msg, "User#%d logged out...\n",clnt_sock);
-		}
 		fputs(msg, stdout);	
 		send_msg(msg, str_len, clnt_sock); //연결된 다른 클라이언트에게 전송
 	}
