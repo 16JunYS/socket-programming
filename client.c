@@ -77,8 +77,11 @@ void* send_msg(void* arg)
 		}
 
 		else if (!strcmp(message, "!quit\n")) { // 대화 종료 메세지
-			write(sock, message, strlen(snd_message)); // 대화 종료 메세지 서버로 전달
-			break;	
+			write(sock, message, strlen(message)); // 대화 종료 메세지 서버로 전달
+				memset(message, 0, sizeof(message));	
+			read(sock, message, sizeof(message));
+			fputs(message, stdout);
+			exit(0);	
 		}
 		
 		else {

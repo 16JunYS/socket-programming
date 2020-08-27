@@ -8,7 +8,7 @@
 
 #define BUF_SIZE 1024
 #define NAME_SIZE 10
-#define MAX_CLNT 2
+#define MAX_CLNT 5
 
 int clnt_socks[MAX_CLNT];
 int clnt_cnt = 0;
@@ -66,16 +66,21 @@ void* handle_clnt(void* arg)
 {
 	int clnt_sock = *((int*)arg);
 	int str_len = 0, i;
-	char msg[NAME_SIZE+BUF_SIZE];
+	char msg[NAME_SIZE+BUF_SIZE] = {0};
 
 	while((str_len = read(clnt_sock, msg, NAME_SIZE+BUF_SIZE-1)) != 0) { //클라이언트로부터 메시지 읽음
-			//printf("11111%s", msg);
-		if (!strcmp(msg, "!quit")) {
+	   if (!strncmp(msg, "!quit", 5)) {
 			memset(msg, 0, sizeof(msg));
 			sprintf(msg, "User#%d logged out...\n",clnt_sock);
+			fputs(msg, stdout);
+			strcpy(msg, "You may leave this room...\n");
+			write(clnt_sock, msg, strlen(msg));
+			close(clnt_sock);
+			break;	
 		}
 		fputs(msg, stdout);	
 		send_msg(msg, str_len, clnt_sock); //연결된 다른 클라이언트에게 전송
+		memset(msg, 0, sizeof(msg));
 	}
 
 	pthread_mutex_lock(&mutex);
