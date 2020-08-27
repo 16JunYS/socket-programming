@@ -7,6 +7,7 @@
 #include <pthread.h>
 
 #define BUF_SIZE 1024
+#define NAME_SIZE 10
 #define MAX_CLNT 2
 
 int clnt_socks[MAX_CLNT];
@@ -66,15 +67,16 @@ void* handle_clnt(void* arg)
 {
 	int clnt_sock = *((int*)arg);
 	int str_len = 0, i;
-	char msg[BUF_SIZE];
+	char msg[NAME_SIZE+BUF_SIZE];
 
-	while((str_len=read(clnt_sock, msg, sizeof(msg))) != 0) {
+	while((str_len = read(clnt_sock, msg, NAME_SIZE+BUF_SIZE-1)) != 0) {
+		fputs(msg, stdout);	
 		send_msg(msg, str_len, clnt_sock);
 	}
 
 	pthread_mutex_lock(&mutex);
 	for(i=0; i<clnt_cnt; i++) {
-		if (i == clnt_sock) {
+		if (clnt_socks[i] == clnt_sock) {
 			while(i<clnt_cnt-1) {
 				clnt_socks[i] = clnt_socks[i+1];
 				i++;
@@ -95,7 +97,9 @@ void send_msg(char* msg, int len, int sock)
 
 	pthread_mutex_lock(&mutex);
 	for(i=0; i<clnt_cnt; i++) {
-		if (i == sock) continue;
+		if (clnt_socks[i] == sock) {
+			continue;
+		}
 		write(clnt_socks[i], msg, len);
 	}
 	pthread_mutex_unlock(&mutex);
